@@ -5,7 +5,7 @@ This is the ScriptEd customized version of JSBin
 
 * **master** - Production ready release code
 * **scripted**/upstream - Branch intended to submission back to remy/jsbin
-* **scripted/dev **- Active development branch
+* **scripted/dev**- Active development branch
 * **scripted/feature/** - Feature branches (e.g. scripted/feature/github-export)
 * **scripted/release/** - Releases (e.g. scripted/release/v0.1.0)
 	
