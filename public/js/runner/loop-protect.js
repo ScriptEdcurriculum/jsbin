@@ -203,6 +203,7 @@ var loopProtect = (function () {
             } else if (character === '{') {
               debug('- multiline with braces');
 
+
               var insert = ";";
               insert += "var prompt = window.runnerWindow.prompt("+printLineNumber+");";
               insert += "var alert = window.runnerWindow.alert("+printLineNumber+");";
