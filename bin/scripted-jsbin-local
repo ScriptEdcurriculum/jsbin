@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+var app = require("./jsbin.js")();
+
+var fs = require("fs");
+
+if (fs.existsSync("jsbin.sqlite")) {
+	fs.unlinkSync("jsbin.sqlite");	
+	console.log("Deleting sqllite database file!");
+}
+
+app.connect();
