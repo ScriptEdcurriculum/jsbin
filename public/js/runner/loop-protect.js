@@ -202,7 +202,13 @@ var loopProtect = (function () {
 
             } else if (character === '{') {
               debug('- multiline with braces');
-              var insert = ';\nif (' + method + '({ line: ' + printLineNumber + ' })) break;\n';
+
+              var insert = ";";
+              insert += "var prompt = window.runnerWindow.prompt("+printLineNumber+");";
+              insert += "var alert = window.runnerWindow.alert("+printLineNumber+");";
+              insert += "var confirm = window.runnerWindow.confirm("+printLineNumber+");";
+              insert += 'if (' + method + '({ line: ' + printLineNumber + ' })) break;'
+
               line = line.substring(0, index + 1) + insert + line.substring(index + 1);
 
               index += insert.length;
