@@ -85,7 +85,10 @@ var runner = (function () {
       // childDoc.write) can access the objects.
       childWindow.runnerWindow = {
         proxyConsole: proxyConsole,
-        protect: loopProtect.protect
+        protect: loopProtect.protect,
+        prompt: loopProtect.prompt,
+        alert: loopProtect.alert,
+        confirm: loopProtect.confirm
       };
 
       // Reset the loop protection before rendering
