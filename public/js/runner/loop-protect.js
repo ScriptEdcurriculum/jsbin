@@ -202,14 +202,7 @@ var loopProtect = (function () {
 
             } else if (character === '{') {
               debug('- multiline with braces');
-
-
-              var insert = ";";
-              insert += "var prompt = window.runnerWindow.prompt("+printLineNumber+");";
-              insert += "var alert = window.runnerWindow.alert("+printLineNumber+");";
-              insert += "var confirm = window.runnerWindow.confirm("+printLineNumber+");";
-              insert += 'if (' + method + '({ line: ' + printLineNumber + ' })) break;'
-
+              var insert = ';var prompt = window.runnerWindow.prompt('+printLineNumber+');\nif (' + method + '({ line: ' + printLineNumber + ' })) break;\n';
               line = line.substring(0, index + 1) + insert + line.substring(index + 1);
 
               index += insert.length;
@@ -301,10 +294,18 @@ var loopProtect = (function () {
 
   /**
    * Injected code in to user's code to **try** to protect against infinite
-   * loops cropping up in the code, and killing the browser. Returns true
-   * when the loops has been running for more than 100ms.
+   * loops cropping up in the code, and killing the browser. 
+   *
+   * If the popup statement (alert,prompt,confirm) is encountered in the 
+   * loop, the protection will allow the loop to run for a maximum of 
+   * 100 iterations.  Otherwise, the loop is limited to a max
+   * of 100ms of runtime
+   * 
+   * Returns true if the loop is potentially infinite.
    */
   loopProtect.protect = function (state) {
+    var MAX_LOOP_POPUP = 100; //TODO: Make this configurable
+
     loopProtect.counters[state.line]  = loopProtect.counters[state.line] || {};
     var line = loopProtect.counters[state.line];
     if (state.reset) {
@@ -313,18 +314,66 @@ var loopProtect = (function () {
       line.last = 0;
     }
     line.hit++;
-    if ((+new Date - line.time) > 100) {//} && line.hit !== line.last+1) {
-      // We've spent over 100ms on this loop... smells infinite.
-      var msg = 'Exiting potential infinite loop at line ' + state.line + '. To disable loop protection: add "// noprotect" to your code';
-      if (window.proxyConsole) {
-        window.proxyConsole.error(msg);
-      } else console.error(msg);
-      // Returning true prevents the loop running again
-      return true;
+
+    /**
+     * A statement that generated a pop-up box (prompt, alert, or confirm) has 
+     * been encountered in the loop. If this happens we will let the loop run 
+     * for a maximum of MAX_LOOP_POPUP times, rather than limiting the amount 
+     * of time that it can run.
+     *
+     *  TODO: Add flag enabled/disable the use of custom protection for popups
+    */
+    if (state.popup) {
+        line.popup = true;
+
+        if (!line.popupCount) {
+            line.popupCount = 0;
+        }
+        line.popupCount++;
+        return;
+    }
+
+    function exitLoop() {
+       var msg = 'Exiting potential infinite loop at line ' + state.line + '. To disable loop protection: add "// noprotect" to your code';
+        if (window.proxyConsole) {
+            window.proxyConsole.error(msg);
+        } else console.error(msg);
+        return true;
+    }
+
+    //Check to see if the maximum number of prompt statements has been reached
+    if (line.popup) { 
+        if (line.popupCount > MAX_LOOP_POPUP) {
+            return exitLoop();
+        }
+    }
+    else if ((+new Date - line.time) > 100) {
+     return exitLoop();
     }
     line.last++;
     return false;
   };
+
+
+  loopProtect.prompt = function(lineNumber) {
+        return function(message, defaultText) {
+            window.loopProtect.protect({line: lineNumber, popup: true});
+            return window.prompt(message, defaultText);
+        }
+  }
+  loopProtect.confirm = function(lineNumber) {
+        return function(message) {
+            window.loopProtect.protect({line: lineNumber, popup: true});
+            return window.confirm(message);
+        }
+  }
+  loopProtect.alert = function(lineNumber) {
+        return function(message) {
+            window.loopProtect.protect({line: lineNumber, popup: true});
+            return window.alert(message);
+        }
+  }
+
 
   loopProtect.reset = function () {
     // reset the counters
